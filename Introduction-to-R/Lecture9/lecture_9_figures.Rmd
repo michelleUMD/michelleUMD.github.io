@@ -1,0 +1,208 @@
+---
+title: "Lecture_9_Figures"
+author: "BSCI238C"
+date: "Lecture 9"
+output:
+  html_document: default
+  pdf_document: default
+---
+We'll learn about creating figures in R this week. We previously obtained numeric results from our analyses, but when presenting our results we may choose something easier to understand visually. Figures are what help us do that and allow us to display our results. There are many functions that create figures for us. 
+
+We learned plot() earlier when we talked about modeling. plot() creates a scatterplot. Let's see a previous example again with the Formaldehyde dataset. 
+
+```{r}
+View(Formaldehyde)
+
+#Review from regression lecture:
+#Create scatterplot
+plot(x = Formaldehyde$carb, y = Formaldehyde$optden,
+     main = "Beer's Law", 
+     xlab = "concentration (L)", 
+     ylab = "absorbance")
+
+#Fit a line of best fit
+linear_model <- lm(Formaldehyde$optden ~ Formaldehyde$carb)
+summary(linear_model)
+
+#Add the line to the plot
+abline(linear_model)
+
+```
+
+Another figure we can make are boxplots. Use __boxplot()__ to create one. 
+
+```{r}
+boxplot(x = sleep$extra, main = "Boxplot of sleep changes", ylab = "hours")
+
+#Last week we compared sleep hour differences in the control and experimental group
+#So let's try that again but now with boxplots
+control <- subset(sleep, sleep$group == 1)
+experimental <- subset(sleep, sleep$group == 2)
+boxplot(x = control$extra, main = "Boxplot of sleep changes in control group", ylab = "hours")
+boxplot(x = experimental$extra, main = "Boxplot of sleep changes in experimental group", ylab = "hours")
+
+```
+
+Finally, we'll learn histograms. We use the __hist()__ function. Let's try this with the sleep dataset. 
+
+```{r}
+hist(x = sleep$extra, main = "Histogram of sleep changes", xlab = "hours")
+
+#Last week we compared sleep hour differences in the control and experimental group
+#So let's try that again but now with histograms
+control <- subset(sleep, sleep$group == 1)
+experimental <- subset(sleep, sleep$group == 2)
+hist(x = control$extra, main = "Histogram of sleep changes in control group", xlab = "hours")
+hist(x = experimental$extra, main = "Histogram of sleep changes in experimental group", xlab = "hours")
+
+```
+
+
+## ggplot2
+
+### Scatterplots
+
+So far, the figures we have made look very crude. For scientific publications, we probably want figures that look nicer. We're going to turn to ggplot2, which is a package that helps with data visualization. In order to use ggplot2, first run these two lines of code. Have these two line exactly as shown at the top of your R script. You will only need to run the first line once (unless you uninstall R on your computer), whereas run the second line whenever you open the script again.
+
+
+```{r}
+install.packages("ggplot2") 	#installs this package to your R
+library(ggplot2)           		#opens the package for use
+```
+
+
+The ggplot() function creates a blank plot. The first argument is for you to specify the variable containing your dataset. The second argument is for aesthetics (aes), which are features on your plot. Use aes() argument to specify what your x and y variables are like below. 
+
+
+```{r}
+ggplot(Formaldehyde, aes(x = carb, y = optden))
+```
+
+We then add stuff to the plot by adding _layers_. The layer of geom_point() will appear on top of your previous blank plot, and this function adds points. In other words, whenever you want to create a scatterplot, you add __+ geom_point()__ to the end of your ggplot() function call. 
+
+```{r}
+ggplot(Formaldehyde, aes(x = carb, y = optden)) + geom_point()
+```
+
+So far this scatterplot doesn't look that different from one we would get from plot(). But the benefit of ggplot2 is we can customize each layer to look like what we want it to. We do this by adding arguments in the layer's function call. 
+
+Arguments in geom_point(): 
+
+* col = color for the points
+* size = size of the points being plotted
+
+```{r}
+ggplot(Formaldehyde, aes(x = carb, y = optden)) + geom_point(col = "purple", size = 3)
+```
+
+Let's create another layer on top of the blank plot and on top of the points. __geom_smooth()__ will create a layer for our regression model. 
+
+Arguments in geom_smooth(): 
+
+* method = the function call we want to use to fit our regression model with. Since we want a linear model, we pass it "lm"
+* col = the color we want to line to be
+
+```{r}
+ggplot(Formaldehyde, aes(x = carb, y = optden)) + geom_point(col = "purple", size = 3) + geom_smooth(method="lm", col = "red") 
+```
+
+You might have noticed the code for each plot is getting longer and longer, as well as getting repetitive. We can store plots into variables (placeholders) to save us from rewriting the same code! Then you can call __plot()__ on the variable containing your plot and the plot will appear. 
+```{r}
+g <- ggplot(Formaldehyde, aes(x = carb, y = optden)) + geom_point(col = "purple", size = 3) + geom_smooth(method="lm", col = "red") 
+
+plot(g)
+```
+
+We can also add layers to our variable name. __labs()__ creates a layer for the labels on your plot
+
+Arguments in labs():
+
+* title="TITLE"
+* subtitle="SUBTITLE"
+* y="Y AXIS LABEL"
+* x="X AXIS LABEL"
+* caption="CAPTION"
+
+```{r}
+h <- g + labs(title="Beer's Law", subtitle="This is a ggplot2 subtitle", y="Absorbance",  x="Concentration", caption="Caption here under plot")
+
+plot(h)
+
+```
+
+You aren't responsible for knowing the following block of code, but I just wanted to share it becasue we touched upon this analysis in our linear regression unit when we stratified BMI vs cholesterol by smoking status. 
+This code plots BMI vs cholesterol, but smokers and non-smokers are plotted on the same plot with different colors and different lines of best fit. 
+
+```{r}
+#Import the dataset and omit the NA's 
+complete_heart <- na.omit(read.csv("C:/Users/miche/Desktop/STIC/Read File Examples/heart_missing.csv", na.strings = "NA"))
+nrow(complete_heart)
+
+#Plot BMI vs chol, but smokers and non-smokers have different colors, shpes, and fills 
+complete_heart$smoking <- factor(complete_heart$smoking, labels = c("non-smoker", "smoker"))
+ggplot(complete_heart, aes(x = chol, y = BMI, shape = smoking, fill = smoking, col = smoking)) + geom_point() + geom_smooth(method="lm") + labs(title="BMI vs Cholesterol", y="BMI",  x="Cholesterol", caption="Association between BMI and Cholsterol, stratified by smoking status")
+
+```
+
+### Boxplots
+
+To create a boxplot in ggplot2, instead of geom_point() we use __geom_boxplot()__. 
+
+```{r}
+ggplot(sleep, aes(y = extra)) + geom_boxplot()
+```
+
+Like with a scatterplot, we can have a y and x axis where y is extra and x is group (1 = control, 2 = experimental)
+
+
+```{r}
+ggplot(sleep, aes(x = group, y = extra)) + geom_boxplot()
+```
+
+If you want the groups (control and experimental) to have different colors, you can set the color argument in aes() equal to group. 
+
+```{r}
+ggplot(sleep, aes(x = group, y = extra, color=group)) + geom_boxplot()
+```
+
+We can also add more layers like in the scatterplot. The following example adds two layers that we have already talked about: labs() to add labels and geom_point() to add points. 
+
+```{r}
+ggplot(sleep, aes(x = group, y = extra, color=group)) + geom_boxplot() + labs(title = "Sleep Changes in the Control and Experimental Group") + geom_point(col = "black")
+```
+
+Then, just for fun the last layer scale_colour_brewer() allows us to further customize the colors. I chose a color theme called "Pastel1".
+
+```{r}
+ggplot(sleep, aes(x = group, y = extra, color=group)) + geom_boxplot() + labs(title = "Sleep Changes in the Control and Experimental Group") + geom_point(col = "black") + scale_colour_brewer(palette = "Pastel1")
+```
+
+
+### Histograms
+To create a boxplot in ggplot2, instead of geom_boxplot() we use __geom_histogram()__. 
+
+```{r}
+ggplot(sleep, aes(x=extra)) + geom_histogram()
+```
+
+Similar to the boxplots, to have different colors for the groups, we can add an additional arguments. Color changes the outline color based on group, and fill changes the fill color inside the rectangles based on group.  
+
+```{r}
+ggplot(sleep, aes(x=extra, color=group, fill = group)) + geom_histogram()
+```
+
+You can alter how many bins (how many rectangles) you want with the argument bins inside geom_histogram(). 
+
+```{r}
+ggplot(sleep, aes(x=extra, color=group, fill = group)) +
+  geom_histogram(bins = 8) 
+```
+
+Just for fun: you can add all sorts of layers, but it's up to you the human to make sure what you're doing is correct for your research. I put points on top of a boxplot on top of a histogram. R doesn't care and will do it. 
+
+```{r}
+ggplot(sleep, aes(x=extra, color=group, fill = group)) +
+  geom_histogram(bins = 8) + geom_boxplot(col = "white", fill = "purple") + geom_point(aes(x = extra, y = ID), col= "white", size = 5) + theme_dark() + labs(title = "Michelle was trying to draw a picture")
+```
+
+In conclusion, we can use functions that come with R to create figures (plot(), boxplot(), hist()), or we can use the ggplot2 package. The advantage of ggplot2 is that we can add layers and customize each layer to look like we want it to. We'll talk more about packages in our final lecture next week. 

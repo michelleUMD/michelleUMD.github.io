@@ -1,0 +1,152 @@
+---
+title: 'Lecture 7: Modeling'
+output:
+  html_notebook: default
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+You have probably seen a line written as y = mx + b. 
+Also, you might have seen Beer's Law before in a biology or chemistry class. 
+```
+Beer's law: absorbance = constant * concentration 
+```
+It basically just says that absorbance varies linearly with concentration. Y = absorbance, m = constant, and x = concentration in this case. 
+
+To learn about modeling we'll be using the R built in dataset called Formaldehyde. Learn more about this dataset by running this block of code:
+```{r}
+?Formaldehyde
+View(Formaldehyde)
+```
+
+Formaldehye has 2 columns
+
+1. carb = numeric	Carbohydrate (ml), basically concentration of sample
+
+2. optden =	numeric	Optical Density, absorbance of sample
+
+
+From Beer's law, we expect a graph of optden vs carb to form a line.
+Let's test out that hypothesis using the plot() function, which plots y vs x. 
+
+```{r}
+plot(x = Formaldehyde$carb, y = Formaldehyde$optden)
+```
+
+This looks pretty linear to me!
+
+\newline
+
+We can add a title, x-axis label, and y-axis label with additional parameters
+
+* main = title
+* xlab = x axis label
+* ylab = y axis label
+
+```{r}
+plot(x = Formaldehyde$carb, y = Formaldehyde$optden, main = "Beer's Law", xlab = "concentration", ylab = "absorbance")
+```
+
+Just visually seeing a linear shape unfortunately isn't enough evidence to say there is a linear relationship. We can actually fit a straight line through our data. The function that creates a linear model is called **lm()**. We pass in our y and x variables with a tilda in the middle. This following code stores that linear model into a variable valled _linear_model_.
+
+```{r}
+linear_model <- lm(Formaldehyde$optden ~ Formaldehyde$carb)
+```
+
+To see what the actual linear model is, we can print it using **print()**
+
+```{r}
+print(linear_model)
+```
+
+This tells us the y-intercept (0.005086) and slope (0.876286) for our linear model. 
+
+\newline
+
+
+What would give us even more information is calling **summary()** (which we have learned before for vectors) on our model. 
+ 
+```{r}
+summary(linear_model)
+```
+This tells both the y-intercept and slope that we saw before, but it also contains important statistics such as standard error and p-values (we'll discuss p-values in our next lecture).
+
+\newline
+
+Now that we have our model, let's add it to our plot! The function is abline(), and we pass the variable storing our model in as a parameter
+```{r}
+plot(x = Formaldehyde$carb, y = Formaldehyde$optden, main = "Beer's Law", xlab = "concentration", ylab = "absorbance")
+abline(linear_model)
+```
+
+Here are the solutions to the in-class exercises:
+```{r}
+conc_liters <- Formaldehyde$carb * 0.001
+
+plot(x = conc_liters, y = Formaldehyde$optden, 
+     main = "Beer's Law", 
+     xlab = "concentration (L)", 
+     ylab = "absorbance")
+
+linear_model_liters <- lm(Formaldehyde$optden ~ conc_liters)
+summary(linear_model_liters)
+
+abline(linear_model_liters)
+
+```
+
+
+
+
+Let's see another example that combines information from our data cleaning lecture. 
+```{r}
+#Import the dataset and omit the NA's 
+complete_heart <- na.omit(read.csv("C:/Users/miche/Desktop/STIC/Read File Examples/heart_missing.csv", na.strings = "NA"))
+nrow(complete_heart)
+
+#Plot BMI vs chol
+plot(x = complete_heart$chol, y = complete_heart$BMI)
+linear_model <- lm(complete_heart$BMI ~ complete_heart$chol)
+abline(linear_model)
+
+#Does smoking modulate the relationship between cholesterol and BMI?
+non_smokers <- subset(complete_heart, complete_heart$smoking == 0)
+smokers <- subset(complete_heart, complete_heart$smoking == 1)
+
+plot(x = smokers$chol, y = smokers$BMI)
+plot(x = non_smokers$chol, y = non_smokers$BMI)
+
+#We can compare the slopes and intercepts of these two lines
+#Model stratifies by smoking status
+model_smoker <- lm(smokers$BMI ~ smokers$chol)
+summary(model_smoker)
+model_non_smoker <- lm(non_smokers$BMI ~ non_smokers$chol)
+summary(model_non_smoker)
+
+#Help visualize both lines 
+plot(x = complete_heart$chol, y = complete_heart$BMI)
+abline(model_smoker)
+abline(model_non_smoker)
+```
+
+
+We learned the lm() function to create linear models. There are TONS of models out there, such as logistic regression, exponential regression, polynomial regression, etc. 
+
+\newline
+
+We won't be doing too much with these other types of regression because I understand everyone is coming to this with a different level of statistics background. However, know that these exist, and modeling with another regression follows this general sort of principle. 
+\newline
+For example, logistic regression would look like this. The function **lm()** is replaced by **glm()**, which stands for generalized linear model. We also add an extra parameter at the end to specify distribution as binomial. 
+
+```
+logistic_model <- glm(y_variable ~ x_variable, family = "binomial")
+```
+
+Again, don't worry about this if you don't know what logistic regression is, but if you were interested in other types of models, **glm()** pretty much has you covered. 
+
+```{r}
+?glm
+```
+
