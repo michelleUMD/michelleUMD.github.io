@@ -1,0 +1,172 @@
+---
+title: "Statistical Significance"
+author: "BSCI238C"
+date: "Lecture 8"
+output: html_document
+---
+We will be doing t-tests to see if there is a statistically significant difference in the mean
+
+```{r}
+?t.test
+```
+
+If you need a refresher on the sleep dataset:
+```{r}
+View(sleep)
+print(sleep)
+```
+
+
+
+### One-sample t-test, two-sided 
+
+* Null hypothesis: mean of extra = 0
+* Alternative hypothesis: mean of extra is not equal to 0
+```{r}
+t.test(x = sleep$extra, alternative = "two.sided")
+```
+This tests asks whether the mean of all the sleep differences (stored in the sleep$extra vector) is different from 0. 
+In other words, it compares mean(sleep\$extra) to 0 and determines if the difference between these two numbers is statistically significant. Because this uses a t-distribution and considers the whole dataset as one sample, this is called a __one sample t-test__. 
+
+
+* We specified the t-test part with our function name __t.test()__
+* x = our data of interest, which is sleep\$extra 
+* alternative = "two.sided" means we are using a two-sided alternative hypothesis. What this means is that we don't care which direction the mean of sleep\$extra is different from 0. The mean of sleep\$extra could be greater than 0 or less than 0. 
+
+\newline
+
+Running this, our results tell us that mean of sleep\$extra = 1.54 (this is found under the line that says "mean of x"). Is this due to random chance or is the true mean actually different from 0? We use the p-value to determine this. 
+
+First off, what is a p-value? Well, a __p-value is the probability of obtaining our result or an even more extreme result, assuming the null hypothesis is true__. Our result was the sample mean 1.54. 
+
+* A "less extreme" result might be 0.1 hours because it is closer to the null hypothesis value 0. 
+* A "more extreme" result might be 100 hours because it is farther from the null hypothesis value 0. 
+
+So the p-value is the probability of selecting a sample whose mean of sleep\$extra is >=1.54 or <=1.54 hours, when the true mean of the entire infinite population has a mean of 0 hours. 
+
+You might have heard before that p-values should be < 0.05 to be statistically significant, meaning there should be a less than a 5% chance of your result (or something more extreme) happening by chance if the null hypothesis is true. This 0.05 is an arbitrary value that is generally accepted to be the threshold. We'll use this threshold in our class because it is pretty standard. 
+
+Our p-value = 0.002918, which is <0.05, meaning our result is statistically significant. There is only a 0.2% chance of getting 1.54 or more extreme, if the true mean was 0 hours. We get to reject our null hypothesis that true mean = 0 hours. 
+
+### One-sample t-test, one-tailed 
+
+* Null hypothesis: mean of extra = 0
+* Alternative hypothesis: mean of extra is > 0
+
+
+Let's take a step back and consider what we are interested in. We want to know if number of hours of sleep increased (we don't want a drug that decreases sleep when students already get so little sleep). Should we be using a two-sided alternative hypothesis?
+
+\newline
+No, right? We only care if sleep increased. That means we can change our alternative hypothesis to be one-tailed, and since we care about an increase, alternative hypothesis should be that the mean is greater than 0. Let's see what that looks like in code:
+```{r}
+t.test(x = sleep$extra, alternative = "greater")
+```
+Now, we see that p-value is 0.001459. This means there is only a 0.1% chance of getting 1.54 or greater as a sample mean if the true mean was 0. Since p-value is < 0.05, we can reject our null hypothesis that said true mean = 0. 
+
+### Two-sample t-test, one-tailed 
+Have you noticed anything wrong with our previous analysis?
+
+
+We were previously looking at the mean of sleep\$extra for the entire dataset. But, our data clearly contains two different types of participants! We have 10 people in a control group and 10 in an experimental group. Our previous analysis just found that overall, people experienced an increase in sleep, but didn't tell us if those people were in the experimental group or not. 
+
+
+To answer this question, we still compare means, but we need to separate the participants in the control (group = 1) and experimental (group = 2) groups. This should be a review from our data manipulation lecture.
+```{r}
+#Each subset contains only the participants in that group
+control <- subset(sleep, sleep$group == 1)
+experimental <- subset(sleep, sleep$group == 2)
+
+#Let's compare the means of each subset
+mean(control$extra)
+mean(experimental$extra)
+```
+Without doing any testing, it seems that the control group experienced a smaller increase in sleep than the experimental group who took the drug. Is this difference significant? We have to do a __two-sample t-test__ to verify. 
+
+* Null hypothesis: mean of extra in group 1 = mean of extra in group 2
+* Alternative hypothesis: mean of extra in group 1 < mean of extra in group 2
+```{r}
+#Each subset contains only the participants in that group
+control <- subset(sleep, sleep$group == 1)
+experimental <- subset(sleep, sleep$group == 2)
+
+t.test(x = control$extra, y = experimental$extra, alternative = "less", var.equal = TRUE)
+```
+This is similar to the one sample t-test, except we have some extra arguments:
+
+* x = control$extra, the sleep differences for the control group
+* y = experimental$extra, the sleep differences for the experimental group
+* var.equal = TRUE just means to treat the variances of each sample as the same. We don't have a good reason to expect one group to have a greater variation in results than the other. 
+
+Note: the order of arguments matters! We want to see if control\$extra < experimental\$extra. Since we put the x argument before the y argument, alternative = "less." We could have flipped it and gotten the same results. 
+It's like saying the following two are equivalent:
+
+* x < y
+* y > x
+```{r}
+#Each subset contains only the participants in that group
+control <- subset(sleep, sleep$group == 1)
+experimental <- subset(sleep, sleep$group == 2)
+
+t.test(x = experimental$extra, y = control$extra, alternative = "greater", var.equal = TRUE)
+```
+
+we could have also done a two-sided version of this test if we didn't care in about the direction that the drug influenced sleep (alternative hypothesis is experimental and control group's mean(sleep\$extra) do not equal)
+
+
+Another way we could have done this same test is using syntax similar to when we learned modeling:
+
+```{r}
+t.test(sleep$extra ~ sleep$group, alternative = "less", var.equal = TRUE)
+```
+
+This saves us the work of having to create subsets with our data. However, be careful with the order of arguments. In this case, group = 1 for control and = 2 for experimental. Because the number for control is lower, treat it as if it came first in the arguments, so we use alternative = "less." 
+
+
+Okay, now let's interpret our results. 
+```
+mean in group 1 mean in group 2 
+           0.75            2.33 
+```
+We saw this before when we used the mean() function. The p-value for this difference is = 0.03959. Since this is < 0.05, we can reject the null hypothesis and accept our alternative hypothesis. It is likely that the difference in sleep between the control and experimental group is not 0, and students in the experimental group experienced a greater increase in sleep. 
+
+### Paired-sample t-test, one-tailed 
+
+There are many ways to design the experiment to collect sleep data. Imagine the following two cases:
+
+
+1. We find __20 students total__, then randomly assign 10 to the control group and 10 to the experimental. The control group gets a placebo while the experimental group gets a drug. Sleep is measured before and after to determine sleep gained/lost. 
+2. We find __10 students total__. On day 1 and 2, we measure the sleep they get and calculate sleep gained/loss. On day 3, we measure hours of sleep, give them the drug, and measure again on day 4. 
+
+For both, there are two groups, except in the second scenario the two groups are actually composed of the same people, just at different times. For the previous analyses, we were assuming the first scenario (20 students total) to be true. However, if the second scenario were true, we would do a __paired t-test__. This test gets its name from the fact that participant 1 in group 1 is "paired" with participant 1 in group 2, participant 5 in group 1 is "paired" with participant 5 in group 2, etc. 
+
+Here is the syntax for that test:
+```{r}
+t.test(sleep$extra ~ sleep$group, alternative = "less", paired = TRUE, var.equal = TRUE)
+```
+
+Again, the function is the same, but we added in another argument paired = TRUE to specify that the data is paired. 
+
+You might have noticed that all these test results came with a 95% confidence interval (in the lines in between the p-value and the sample mean). A confidence interval is an alternative way to looking at a p-value for determining statistical significance. A p-value is somewhat black and white: reject or don't reject, but the confidence interval attempts to estimate where the true mean of the population might lie. In our previous test, a confidence interval of (-Inf, -0.8669947) means the true difference in hours of sleep between the control and experimental group is somewhere between infinity and 0.8669947 hours, with 95% confidence. If you didn't want to use a p-value, you could make the claim that this interval does not include 0, so you are 95% confident the true difference between experimental and control groups is not 0. 
+
+
+Let's try a t-test for the heart dataset. Does cholesterol levels differ between sexes?
+```{r}
+#Import the dataset and omit the NA's 
+incomplete_heart <- read.csv("C:/Users/miche/Desktop/STIC/Read File Examples/heart_missing.csv", na.strings = "NA")
+nrow(incomplete_heart)
+
+complete_heart <- incomplete_heart[complete.cases(incomplete_heart[ , c("sex", "chol")]), ]
+nrow(complete_heart)
+
+males <- subset(complete_heart, complete_heart$sex == 1)
+nrow(males)
+females <- subset(complete_heart, complete_heart$sex == 0)
+nrow(females)
+t.test(x = males$chol, y = females$chol,  alternative = "two.sided", var.equal = TRUE)
+
+```
+
+
+Final note: rejecting a null hypothesis does not prove anything. Statistical inference is based on inference. There is still a small probability that we could have gotten those results based on chance. It is also possible that we fail to reject the null hypothesis because our p-value is too large when the null hypothesis is indeed false. That is why it is important to re-run experiments with larger sample sizes to validate results. 
+
+You might be wondering why I took you through all those "incorrect" versions of the t-test before finally doing the "correct" two-sample 
